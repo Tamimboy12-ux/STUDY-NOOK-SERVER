@@ -125,6 +125,18 @@ app.delete("/api/rooms/:id", async (req, res) => {
 
 
 
+app.get("/api/my-listings/:email", async (req, res) => {
+  const email = req.params.email;
+
+  const result = await roomsCollection
+    .find({ ownerEmail: email })
+    .toArray();
+
+  res.send(result);
+});
+
+
+
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

@@ -67,6 +67,29 @@ app.post("/api/rooms", async (req, res) => {
 });
 
 
+app.get("/api/rooms", async (req, res) => {
+  const { search } = req.query;
+
+  let query = {};
+
+  if (search) {
+    query.title = {
+      $regex: search,
+      $options: "i",
+    };
+  }
+
+  const result = await roomsCollection
+    .find(query)
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  res.send(result);
+});
+
+
+
+
 
 
 

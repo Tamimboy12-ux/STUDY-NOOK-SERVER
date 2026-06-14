@@ -88,6 +88,16 @@ app.get("/api/rooms", async (req, res) => {
 });
 
 
+app.get("/api/rooms/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const result = await roomsCollection.findOne({
+    _id: new ObjectId(id),
+  });
+
+  res.send(result);
+});
+
 
 
 

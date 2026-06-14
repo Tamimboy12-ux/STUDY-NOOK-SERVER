@@ -98,7 +98,30 @@ app.get("/api/rooms/:id", async (req, res) => {
   res.send(result);
 });
 
+app.patch("/api/rooms/:id", async (req, res) => {
+  const id = req.params.id;
 
+  const updatedData = req.body;
+
+  const result = await roomsCollection.updateOne(
+    { _id: new ObjectId(id) },
+    {
+      $set: updatedData,
+    }
+  );
+
+  res.send(result);
+});
+
+app.delete("/api/rooms/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const result = await roomsCollection.deleteOne({
+    _id: new ObjectId(id),
+  });
+
+  res.send(result);
+});
 
 
 

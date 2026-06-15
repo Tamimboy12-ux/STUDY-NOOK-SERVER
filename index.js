@@ -171,6 +171,52 @@ app.post("/api/bookings", async (req, res) => {
 });
 
 
+app.get("/api/bookings/:email", async (req, res) => {
+  const email = req.params.email;
+
+  const result = await bookingsCollection
+    .find({ userEmail: email })
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  res.send(result);
+});
+
+
+app.patch("/api/bookings/cancel/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const booking = await bookingsCollection.findOne({
+    _id: new ObjectId(id),
+  });
+
+  await bookingsCollection.updateOne(
+    { _id: new ObjectId(id) },
+    {
+      $set: {
+        status: "cancelled",
+      },
+    }
+  );
+
+  await roomsCollection.updateOne(
+    {
+      _id: new ObjectId(booking.roomId),
+    },
+    {
+      $inc: {
+        bookingCount: -1,
+      },
+    }
+  );
+
+  res.send({
+    success: true,
+    message: "Booking cancelled",
+  });
+});
+
+
 
 
 app.listen(port, () => {

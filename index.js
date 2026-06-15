@@ -30,6 +30,8 @@ const client = new MongoClient(uri, {
 });
 
 let roomsCollection;
+let bookingsCollection;
+
 
 async function run() {
   try {
@@ -38,6 +40,7 @@ async function run() {
     const db = client.db(process.env.AUTH_DB_NAME || "studyNook");
 
     roomsCollection = db.collection("rooms");
+    bookingsCollection = db.collection("bookings");
 
     console.log("MongoDB Connected Successfully");
 
@@ -131,6 +134,38 @@ app.get("/api/my-listings/:email", async (req, res) => {
   const result = await roomsCollection
     .find({ ownerEmail: email })
     .toArray();
+
+  res.send(result);
+});
+
+
+
+app.post("/api/bookings", async (req, res) => {
+
+  const booking = req.body;
+
+  const conflict = await bookingsCollection.findOne({
+    roomId: booking.roomId,
+    date: booking.date,
+    startTime: booking.startTime,
+    status: "confirmed",
+  });
+
+  if (conflict) {
+    return res.status(400).send({
+      message: "This time slot is already booked",
+    });
+  }
+
+  booking.status = "confirmed";
+  booking.createdAt = new Date();
+
+  const result = await bookingsCollection.insertOne(booking);
+
+  await roomsCollection.updateOne(
+    { _id: new ObjectId(booking.roomId) },
+    { $inc: { bookingCount: 1 } }
+  );
 
   res.send(result);
 });

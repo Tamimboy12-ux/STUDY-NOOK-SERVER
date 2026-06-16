@@ -16,7 +16,10 @@ const app = express();
 const port = 5000;
 
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: [
+    "http://localhost:3000",
+    "https://study-nook-client-black.vercel.app"
+  ],
   credentials: true,
 }));
 
@@ -67,7 +70,7 @@ app.post("/jwt", (req, res) => {
   res.cookie("token", token, {
     httpOnly: true,
     secure: false,
-    sameSite: "lax",
+    sameSite: "none",
   });
 
   res.send({ success: true });

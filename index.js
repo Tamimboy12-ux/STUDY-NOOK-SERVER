@@ -5,6 +5,9 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 dotenv.config();
@@ -18,6 +21,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = process.env.DB_URI;
 
@@ -52,13 +56,70 @@ async function run() {
 run().catch(console.dir);
 
 
+app.post("/jwt", (req, res) => {
+
+  const token = jwt.sign(
+    { email: req.body.email },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+  });
+
+  res.send({ success: true });
+});
+
+
+const verifyToken = (req, res, next) => {
+
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res.status(401).send({
+      message: "Unauthorized Access",
+    });
+  }
+
+  jwt.verify(
+    token,
+    process.env.JWT_SECRET,
+    (err, decoded) => {
+
+      if (err) {
+        return res.status(401).send({
+          message: "Invalid Token",
+        });
+      }
+
+      req.user = decoded;
+
+      next();
+    }
+  );
+};
+
+
+app.post("/logout", (req, res) => {
+
+  res.clearCookie("token");
+
+  res.send({
+    success: true,
+  });
+});
+
+
 app.get("/", (req, res) => {
   res.send("StudyNook API Running fine");
 });
 
 
 
-app.post("/api/rooms", async (req, res) => {
+app.post("/api/rooms", verifyToken, async (req, res) => {
   const room = req.body;
 
   room.createdAt = new Date();
@@ -128,7 +189,7 @@ app.delete("/api/rooms/:id", async (req, res) => {
 
 
 
-app.get("/api/my-listings/:email", async (req, res) => {
+app.get("/api/my-listings/:email", verifyToken, async (req, res) => {
   const email = req.params.email;
 
   const result = await roomsCollection
@@ -140,7 +201,7 @@ app.get("/api/my-listings/:email", async (req, res) => {
 
 
 
-app.post("/api/bookings", async (req, res) => {
+app.post("/api/bookings", verifyToken, async (req, res) => {
 
   const booking = req.body;
 
@@ -171,7 +232,7 @@ app.post("/api/bookings", async (req, res) => {
 });
 
 
-app.get("/api/bookings/:email", async (req, res) => {
+app.get("/api/bookings/:email", verifyToken, async (req, res) => {
   const email = req.params.email;
 
   const result = await bookingsCollection
@@ -183,7 +244,7 @@ app.get("/api/bookings/:email", async (req, res) => {
 });
 
 
-app.patch("/api/bookings/cancel/:id", async (req, res) => {
+app.patch("/api/bookings/cancel/:id", verifyToken, async (req, res) => {
   const id = req.params.id;
 
   const booking = await bookingsCollection.findOne({
